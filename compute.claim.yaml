@@ -1,0 +1,10 @@
+apiVersion: cncf.learning.org/v1alpha1
+kind: LabCompute
+metadata:
+  namespace: lab
+  name: lab-compute
+spec:
+  parameters:
+    diskSizeGB: 20
+  compositionRef:
+    name: compute

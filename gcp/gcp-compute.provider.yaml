@@ -1,0 +1,17 @@
+
+apiVersion: pkg.crossplane.io/v1alpha1
+kind: ControllerConfig
+metadata:
+  name: debug-config
+spec:
+  args:
+    - --debug
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-gcp-compute
+spec:
+  package: xpkg.upbound.io/upbound/provider-gcp-compute:v0.37.0
+  controllerConfigRef:
+    name: debug-config

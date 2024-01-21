@@ -1,0 +1,140 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: compute
+spec:
+  writeConnectionSecretsToNamespace: upbound-system
+  compositeTypeRef:
+    apiVersion: cncf.learning.org/v1alpha1
+    kind: Compute
+  resources:
+  - name: network
+    base:
+      apiVersion: tf.upbound.io/v1beta1
+      kind: Workspace
+      metadata:
+        name: network
+        labels:
+          workspace: network
+          provisioned-with: terraform
+      spec:
+        forProvider:
+          module: "git::https://github.com/acll19/cncf-lab-setup.git?ref=v1.0.3"
+          source: Remote
+          varFiles:
+            - configMapKeyRef:
+                key: compute-variables.tfvars
+                name: compute-variables
+                namespace: upbound-system
+              source: ConfigMapKey
+        providerConfigRef:
+          name: tf-default
+    patches:
+      - type: ToCompositeFieldPath
+        fromFieldPath: status.atProvider.outputs.network_name
+        toFieldPath: metadata.annotations.network_name
+      - type: ToCompositeFieldPath
+        fromFieldPath: status.atProvider.outputs.subnetwork_name
+        toFieldPath: metadata.annotations.subnetwork_name
+  - name: vm-main
+    base:
+      apiVersion: compute.gcp.upbound.io/v1beta1
+      kind: Instance
+      metadata:
+        annotations:
+          meta.upbound.io/lfclass-id: compute/v1beta1/instance
+          crossplane.io/external-name: main
+        labels:
+          testing.upbound.io/lfclass-name: main
+        name: main
+      spec:
+        forProvider:
+          bootDisk:
+            - initializeParams:
+                - image: ubuntu-os-pro-cloud/ubuntu-pro-2204-lts
+                  size: 10
+                  type: pd-balanced
+          machineType: e2-standard-2
+          metadata:
+            environment: lfclass
+            ssh-keys: |
+              <YOUR_PUBLIC_SSH_KEY_HERE>
+          metadataStartupScript: |
+            echo "VM is up and running"
+          networkInterface:
+            - network: default
+              subnetwork: default
+              accessConfig:
+                - {}
+          tags:
+            - lfclass
+            - cncf
+          zone: europe-west10-b
+        providerConfigRef:
+          name: gcp-default
+    patches:
+      - type: FromCompositeFieldPath
+        fromFieldPath: spec.parameters.diskSizeGB
+        toFieldPath: spec.forProvider.bootDisk[0].initializeParams[0].size
+      - type: FromCompositeFieldPath
+        fromFieldPath: metadata.annotations.network_name
+        toFieldPath: spec.forProvider.networkInterface[0].network
+        policy:
+          fromFieldPath: Required
+      - type: FromCompositeFieldPath
+        fromFieldPath: metadata.annotations.subnetwork_name
+        toFieldPath: spec.forProvider.networkInterface[0].subnetwork
+        policy:
+          fromFieldPath: Required
+  - name: vm-worker
+    base:
+      apiVersion: compute.gcp.upbound.io/v1beta1
+      kind: Instance
+      metadata:
+        annotations:
+          meta.upbound.io/lfclass-id: compute/v1beta1/instance
+          crossplane.io/external-name: worker
+        labels:
+          testing.upbound.io/lfclass-name: worker
+        name: worker
+      spec:
+        forProvider:
+          bootDisk:
+            - initializeParams:
+                - image: ubuntu-os-pro-cloud/ubuntu-pro-2204-lts
+                  size: 10
+                  type: pd-balanced
+          machineType: e2-standard-2
+          metadata:
+            environment: lfclass
+            ssh-keys: |
+              <YOUR_PUBLIC_SSH_KEY_HERE>
+          metadataStartupScript: |
+            echo "VM is up and running"
+          networkInterface:
+            - network: default
+              subnetwork: default
+              accessConfig:
+                - {}
+          tags:
+            - lfclass
+            - cncf
+          zone: europe-west10-b
+        providerConfigRef:
+          name: gcp-default
+    patches:
+      - type: FromCompositeFieldPath
+        fromFieldPath: spec.parameters.diskSizeGB
+        toFieldPath: spec.forProvider.bootDisk[0].initializeParams[0].size
+      - type: FromCompositeFieldPath
+        fromFieldPath: metadata.annotations.network_name
+        toFieldPath: spec.forProvider.networkInterface[0].network
+        policy:
+          fromFieldPath: Required
+      - type: FromCompositeFieldPath
+        fromFieldPath: metadata.annotations.subnetwork_name
+        toFieldPath: spec.forProvider.networkInterface[0].subnetwork
+        policy:
+          fromFieldPath: Required
+
+
