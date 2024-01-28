@@ -17,7 +17,7 @@ spec:
     metadata:
       environment: lfclass
       ssh-keys: |
-        acll19@gmail.com:ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIFM3WD+62gqrdsRpwN+xcUQvq8/ToQQZSdSvJrk9MgZ acll19@gmail.com
+        <PUBLIC_SSH_KEY>
     metadataStartupScript: echo 'Upbound!' > /test.txt
     networkInterface:
       - network: lfclass
